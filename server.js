@@ -136,15 +136,15 @@ app.delete("/delete/:id", async (요청, 응답) => {
 //   응답.render("list.ejs", { posts: result });
 // });
 
-// app.get("/list/:id", async (요청, 응답) => {
-//   let result = await db
-//     .collection("post")
-//     .find()
-//     .skip((요청.params.id - 1) * 5)
-//     .limit(5)
-//     .toArray();
-//   응답.render("list.ejs", { posts: result });
-// });
+app.get("/list/:id", async (요청, 응답) => {
+  let result = await db
+    .collection("post")
+    .find()
+    .skip((요청.params.id - 1) * 5)
+    .limit(5)
+    .toArray();
+  응답.render("list.ejs", { posts: result });
+});
 
 app.get("/list/next/:id", async (요청, 응답) => {
   let result = await db
@@ -152,5 +152,17 @@ app.get("/list/next/:id", async (요청, 응답) => {
     .find({ _id: { $gt: new ObjectId(요청.params.id) } })
     .limit(5)
     .toArray();
+  응답.render("list.ejs", { posts: result });
+});
+
+app.get("/list/previous/:id", async (요청, 응답) => {
+  let result = await db
+    .collection("post")
+    .find({ _id: { $lt: new ObjectId(요청.params.id) } })
+    .sort({ _id: -1 }) //내림차순 정렬
+    .limit(5)
+    .toArray();
+
+  result.reverse(); //결과를 다시 오름차순으로 정렬
   응답.render("list.ejs", { posts: result });
 });
