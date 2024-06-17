@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <link rel="stylesheet" href="/main.css" />
+  </head>
+  <body class="grey-bg">
+    <%- include('nav.ejs') %>
+
+    <form class="form-box" action="/register" method="POST">
+      <h4>가입</h4>
+      <input name="username" />
+      <input name="password" type="password" class="password" />
+      <input name="checkPassword" type="password" class="checkPassword" />
+      <button type="button">전송</button>
+    </form>
+  </body>
+  <script>
+    const password = document.querySelector(".password");
+    const checkPassword = document.querySelector(".checkPassword");
+    const btn = document.querySelector("button");
+
+    btn.addEventListener("click", () => {
+      if (password.value !== checkPassword.value) {
+        alert("비밀번호가 일치하지 않음");
+        return;
+      } else {
+        document.querySelector(".form-box").submit();
+      }
+    });
+  </script>
+</html>

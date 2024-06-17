@@ -2,6 +2,7 @@ const { log } = require("console");
 const express = require("express");
 const app = express();
 const methodOverride = require("method-override");
+const bcrypt = require("bcrypt");
 
 app.use(methodOverride("_method"));
 app.use(express.static(__dirname + "/public"));
@@ -9,9 +10,12 @@ app.set("view engine", "ejs");
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+const { MongoClient, ObjectId } = require("mongodb");
+
 const session = require("express-session");
 const passport = require("passport");
 const LocalStrategy = require("passport-local");
+const MongoStore = require("connect-mongo");
 
 app.use(passport.initialize());
 app.use(
@@ -20,11 +24,14 @@ app.use(
     resave: false,
     saveUninitialized: false,
     cookie: { maxAge: 60 * 60 * 1000 },
+    store: MongoStore.create({
+      mongoUrl:
+        "mongodb+srv://dpwls31200:ne7Y5kEeKRR6njqj@cluster0.8dno1mv.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0",
+      dbName: "forum",
+    }),
   })
 );
 app.use(passport.session());
-
-const { MongoClient, ObjectId } = require("mongodb");
 
 let db;
 const url =
@@ -67,7 +74,13 @@ app.get("/time", async (요청, 응답) => {
 });
 
 app.get("/write", async (요청, 응답) => {
-  응답.render("write.ejs");
+  // console.log(요청.user);
+
+  if (요청.user == null || 요청.user == undefined || 요청.user == "") {
+    응답.send("로그인 하세요");
+  } else {
+    응답.render("write.ejs");
+  }
 });
 
 app.post("/add", async (요청, 응답) => {
@@ -193,7 +206,8 @@ passport.use(
     if (!result) {
       return cb(null, false, { message: "아이디 DB에 없음" });
     }
-    if (result.password == 입력한비번) {
+
+    if (await bcrypt.compare(입력한비번, result.password)) {
       return cb(null, result);
     } else {
       return cb(null, false, { message: "비번불일치" });
@@ -212,7 +226,7 @@ passport.deserializeUser(async (user, done) => {
   let result = await db
     .collection("user")
     .findOne({ _id: new ObjectId(user.id) });
-  delete result.password;
+  // delete result.password;
   process.nextTick(() => {
     done(null, result);
   });
@@ -228,13 +242,13 @@ app.post("/login", async (요청, 응답, next) => {
     if (!user) return 응답.status(401).json(info.message);
     요청.logIn(user, (err) => {
       if (err) return next(err);
-      응답.redirect("/");
+      응답.redirect("/list");
     });
   })(요청, 응답, next);
 });
 
 app.get("/mypage", async (요청, 응답) => {
-  console.log(요청.user);
+  // console.log(요청.user);
   if (요청.user) {
     응답.render("mypage.ejs", { userId: 요청.user.username });
   }
@@ -242,4 +256,22 @@ app.get("/mypage", async (요청, 응답) => {
 
 app.get("/register", async (요청, 응답) => {
   응답.render("register.ejs");
+});
+
+app.post("/register", async (요청, 응답) => {
+  let hash = await bcrypt.hash(요청.body.password, 10);
+  // let userId = { username: 요청.body.username };
+  const checkId = await db
+    .collection("user")
+    .findOne({ username: 요청.body.username });
+  // console.log(checkId);
+
+  if (checkId == null) {
+    await db
+      .collection("user")
+      .insertOne({ username: 요청.body.username, password: hash });
+    응답.redirect("/list");
+  } else {
+    응답.send("중복된 아이디");
+  }
 });
