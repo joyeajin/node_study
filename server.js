@@ -9,6 +9,21 @@ app.set("view engine", "ejs");
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+const session = require("express-session");
+const passport = require("passport");
+const LocalStrategy = require("passport-local");
+
+app.use(passport.initialize());
+app.use(
+  session({
+    secret: "암호화에 쓸 비번",
+    resave: false,
+    saveUninitialized: false,
+    cookie: { maxAge: 60 * 60 * 1000 },
+  })
+);
+app.use(passport.session());
+
 const { MongoClient, ObjectId } = require("mongodb");
 
 let db;
@@ -146,6 +161,7 @@ app.get("/list/:id", async (요청, 응답) => {
   응답.render("list.ejs", { posts: result });
 });
 
+// 다음버튼
 app.get("/list/next/:id", async (요청, 응답) => {
   let result = await db
     .collection("post")
@@ -155,6 +171,7 @@ app.get("/list/next/:id", async (요청, 응답) => {
   응답.render("list.ejs", { posts: result });
 });
 
+// 이전버튼
 app.get("/list/previous/:id", async (요청, 응답) => {
   let result = await db
     .collection("post")
@@ -165,4 +182,64 @@ app.get("/list/previous/:id", async (요청, 응답) => {
 
   result.reverse(); //결과를 다시 오름차순으로 정렬
   응답.render("list.ejs", { posts: result });
+});
+
+passport.use(
+  new LocalStrategy(async (입력한아이디, 입력한비번, cb) => {
+    let result = await db
+      .collection("user")
+      .findOne({ username: 입력한아이디 });
+
+    if (!result) {
+      return cb(null, false, { message: "아이디 DB에 없음" });
+    }
+    if (result.password == 입력한비번) {
+      return cb(null, result);
+    } else {
+      return cb(null, false, { message: "비번불일치" });
+    }
+  })
+);
+
+passport.serializeUser((user, done) => {
+  // console.log(user);
+  process.nextTick(() => {
+    done(null, { id: user._id, username: user.username });
+  });
+});
+
+passport.deserializeUser(async (user, done) => {
+  let result = await db
+    .collection("user")
+    .findOne({ _id: new ObjectId(user.id) });
+  delete result.password;
+  process.nextTick(() => {
+    done(null, result);
+  });
+});
+
+app.get("/login", async (요청, 응답) => {
+  응답.render("login.ejs");
+});
+
+app.post("/login", async (요청, 응답, next) => {
+  passport.authenticate("local", (error, user, info) => {
+    if (error) return 응답.status(500).json(error);
+    if (!user) return 응답.status(401).json(info.message);
+    요청.logIn(user, (err) => {
+      if (err) return next(err);
+      응답.redirect("/");
+    });
+  })(요청, 응답, next);
+});
+
+app.get("/mypage", async (요청, 응답) => {
+  console.log(요청.user);
+  if (요청.user) {
+    응답.render("mypage.ejs", { userId: 요청.user.username });
+  }
+});
+
+app.get("/register", async (요청, 응답) => {
+  응답.render("register.ejs");
 });
