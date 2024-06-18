@@ -106,9 +106,13 @@ app.get("/about", (요청, 응답) => {
 
 app.get("/list", async (요청, 응답) => {
   let result = await db.collection("post").find().toArray();
+  let userId = new ObjectId(요청.user._id);
+
+  console.log(요청.user._id);
+  console.log(result);
   // console.log(result[0].title);
   // 응답.send(result[0].title);
-  응답.render("list.ejs", { posts: result });
+  응답.render("list.ejs", { posts: result, userId: userId });
 });
 
 app.get("/time", async (요청, 응답) => {

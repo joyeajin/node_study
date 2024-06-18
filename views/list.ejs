@@ -17,7 +17,18 @@
         <h4>
           <a href="/detail/<%= posts[i]._id %>"><%= posts[i].title %></a>
           <a href="/update/<%= posts[i]._id %>">✏️</a>
-          <span class="delete" data-id="<%= posts[i]._id %>">🗑️</span>
+          <!-- <p><%= posts[i].user %></p>
+          <p><%= userId %></p> -->
+
+          <% if(userId && JSON.stringify(userId) ===
+          JSON.stringify(posts[i].user)){ %>
+          <span
+            class="delete"
+            data-id="<%= posts[i]._id %>"
+            data-userId="<%= userId %>"
+            >🗑️</span
+          >
+          <% } else{ "" } %>
         </h4>
         <p><%= posts[i].content %></p>
       </div>

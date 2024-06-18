@@ -49,24 +49,20 @@ router.get("/write", checkLogin, async (요청, 응답) => {
 router.post("/add", async (요청, 응답) => {
   // console.log(요청.body);
 
-  // console.log(요청.file);
+  console.log(요청.user);
   upload.single("img1")(요청, 응답, async (err) => {
     if (err) return 응답.send("업로드 에러");
     else {
       try {
         if (요청.body.title === "") {
           응답.send("제목을 입력해주세요.");
-        } else if (요청.file == undefined) {
-          await db.collection("post").insertOne({
-            title: 요청.body.title,
-            content: 요청.body.content,
-          });
-          응답.redirect("/list");
         } else {
           await db.collection("post").insertOne({
             title: 요청.body.title,
             content: 요청.body.content,
-            img: 요청.file.location,
+            img: 요청.file ? 요청.file.location : "",
+            user: 요청.user._id,
+            username: 요청.user.username,
           });
           응답.redirect("/list");
         }
@@ -115,7 +111,7 @@ router.put("/update", async (요청, 응답) => {
   await db
     .collection("post")
     .updateOne(
-      { _id: new ObjectId(요청.body.id) },
+      { _id: new ObjectId(요청.body.id), user: new ObjectId(요청.user._id) },
       { $set: { title: 요청.body.title, content: 요청.body.content } }
     );
   응답.redirect("/list");
@@ -124,7 +120,10 @@ router.put("/update", async (요청, 응답) => {
 //delete
 router.delete("/delete/:id", async (요청, 응답) => {
   // console.log(요청.params);
-  await db.collection("post").deleteOne({ _id: new ObjectId(요청.params.id) });
+  await db.collection("post").deleteOne({
+    _id: new ObjectId(요청.params.id),
+    user: new ObjectId(요청.user._id),
+  });
   응답.send("삭제완료");
 });
 
