@@ -48,9 +48,18 @@
             // },
             // body: JSON.stringify({ a: 1 }),
           })
-            .then((r) => r.text())
+            .then((r) => {
+              if (r.ok) {
+                return r.text();
+              } else {
+                throw new Error("삭제 실패");
+              }
+            })
             .then((r) => {
               e.target.closest(".list-box").style.display = "none";
+            })
+            .catch((err) => {
+              console.error("error:", err);
             });
         });
       });
