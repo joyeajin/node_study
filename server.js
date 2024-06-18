@@ -3,6 +3,7 @@ const express = require("express");
 const app = express();
 const methodOverride = require("method-override");
 const bcrypt = require("bcrypt");
+require("dotenv").config();
 
 app.use(methodOverride("_method"));
 app.use(express.static(__dirname + "/public"));
@@ -25,29 +26,71 @@ app.use(
     saveUninitialized: false,
     cookie: { maxAge: 60 * 60 * 1000 },
     store: MongoStore.create({
-      mongoUrl:
-        "mongodb+srv://dpwls31200:ne7Y5kEeKRR6njqj@cluster0.8dno1mv.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0",
+      mongoUrl: process.env.DB_URL,
       dbName: "forum",
     }),
   })
 );
 app.use(passport.session());
+// app.use("/", checkLogin); // 미들웨어 일괄등록
+// app.use("/list", printTime);
+
+// 이미지 업로드
+const { S3Client } = require("@aws-sdk/client-s3");
+const multer = require("multer");
+const multerS3 = require("multer-s3");
+const s3 = new S3Client({
+  region: "ap-northeast-2",
+  credentials: {
+    accessKeyId: process.env.S3_KEY,
+    secretAccessKey: process.env.S3_SECRET,
+  },
+});
+
+const upload = multer({
+  storage: multerS3({
+    s3: s3,
+    bucket: "yeajinforum1",
+    key: function (요청, file, cb) {
+      cb(null, Date.now().toString()); //업로드시 파일명 변경가능
+    },
+  }),
+});
 
 let db;
-const url =
-  "mongodb+srv://dpwls31200:ne7Y5kEeKRR6njqj@cluster0.8dno1mv.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
+const url = process.env.DB_URL;
 new MongoClient(url)
   .connect()
   .then((client) => {
     console.log("DB연결성공");
     db = client.db("forum");
-    app.listen(8081, () => {
+    app.listen(process.env.PORT, () => {
       console.log("http://localhost:8081 에서 서버 실행중");
     });
   })
   .catch((err) => {
     console.log(err);
   });
+
+function checkLogin(요청, 응답, next) {
+  if (!요청.user) {
+    응답.send("로그인하세요");
+  }
+  next();
+}
+
+// function printTime(요청, 응답, next) {
+//   console.log(new Date());
+//   next();
+// }
+
+function checkIdPw(요청, 응답, next) {
+  if (요청.body.username == "" || 요청.body.password == "") {
+    응답.send("모든 칸 채워주세요");
+  } else {
+    next();
+  }
+}
 
 app.get("/", (요청, 응답) => {
   응답.sendFile(__dirname + "/index.html");
@@ -76,30 +119,37 @@ app.get("/time", async (요청, 응답) => {
 app.get("/write", async (요청, 응답) => {
   // console.log(요청.user);
 
-  if (요청.user == null || 요청.user == undefined || 요청.user == "") {
-    응답.send("로그인 하세요");
-  } else {
+  if (요청.user) {
     응답.render("write.ejs");
+  } else {
+    응답.send("로그인 하세요");
   }
 });
 
 app.post("/add", async (요청, 응답) => {
-  console.log(요청.body);
+  // console.log(요청.body);
 
-  try {
-    if (요청.body.title === "") {
-      응답.send("제목을 입력해주세요.");
-    } else {
-      await db.collection("post").insertOne({
-        title: 요청.body.title,
-        content: 요청.body.content,
-      });
-      응답.redirect("/list");
+  // console.log(요청.file.location);
+  upload.single("img1")(요청, 응답, async (err) => {
+    if (err) return 응답.send("업로드 에러");
+    else {
+      try {
+        if (요청.body.title === "") {
+          응답.send("제목을 입력해주세요.");
+        } else {
+          await db.collection("post").insertOne({
+            title: 요청.body.title,
+            content: 요청.body.content,
+            img: 요청.file.location,
+          });
+          응답.redirect("/list");
+        }
+      } catch (error) {
+        console.log(error);
+        응답.status(500).send("서버 에러남");
+      }
     }
-  } catch (error) {
-    console.log(error);
-    응답.status(500).send("서버 에러남");
-  }
+  });
 });
 
 app.get("/detail/:id", async (요청, 응답) => {
@@ -236,7 +286,7 @@ app.get("/login", async (요청, 응답) => {
   응답.render("login.ejs");
 });
 
-app.post("/login", async (요청, 응답, next) => {
+app.post("/login", checkIdPw, async (요청, 응답, next) => {
   passport.authenticate("local", (error, user, info) => {
     if (error) return 응답.status(500).json(error);
     if (!user) return 응답.status(401).json(info.message);
@@ -258,7 +308,7 @@ app.get("/register", async (요청, 응답) => {
   응답.render("register.ejs");
 });
 
-app.post("/register", async (요청, 응답) => {
+app.post("/register", checkIdPw, async (요청, 응답) => {
   let hash = await bcrypt.hash(요청.body.password, 10);
   // let userId = { username: 요청.body.username };
   const checkId = await db
