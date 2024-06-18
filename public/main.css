@@ -5,7 +5,7 @@ body {
   display: flex;
   padding: 15px;
   align-items: center;
-  background: white;
+  background: #eee;
 }
 .nav a {
   margin-right: 10px;
@@ -63,4 +63,16 @@ div {
   background: white;
   padding: 15px;
   margin-top: 10px;
+}
+
+.search-input {
+  margin-left: 20px;
+  padding: 5px;
+}
+.search-btn {
+  padding: 6px 10px;
+  background: lightgray;
+  border: none;
+  border-radius: 5px;
+  vertical-align: middle;
 }

@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <link rel="stylesheet" href="/main.css" />
+  </head>
+  <body class="grey-bg">
+    <%- include('nav.ejs') %>
+
+    <form class="search-box" action="/search" method="POST">
+      <input type="text" name="title" class="search-input" />
+      <button type="button" class="search-btn">검색</button>
+    </form>
+    <h4>검색결과</h4>
+    <div class="white-bg">
+      <% for(let i = 0; i < lists.length; i++){ %>
+      <div class="list-box">
+        <h4>
+          <a href="/detail/<%= lists[i]._id %>"><%= lists[i].title %></a>
+          <a href="/update/<%= lists[i]._id %>">✏️</a>
+          <span class="delete" data-id="<%= lists[i]._id %>">🗑️</span>
+        </h4>
+        <p><%= lists[i].content %></p>
+      </div>
+      <% } %>
+    </div>
+    <script>
+      const searchBtn = document.querySelector(".search-btn");
+      searchBtn.addEventListener("click", () => {
+        const input = document.querySelector(".search-input").value;
+        location.href = "/search?val=" + input;
+      });
+    </script>
+  </body>
+</html>
