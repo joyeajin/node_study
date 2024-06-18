@@ -330,3 +330,22 @@ app.use("/shop", require("./routes/shop.js"));
 app.use("/board/sub", checkLogin, require("./routes/board.js"));
 
 app.use("/", require("./routes/post.js"));
+
+app.get("/search", async (요청, 응답) => {
+  // console.log(요청.query.val);
+  try {
+    let 검색조건 = [
+      {
+        $search: {
+          index: "title_index",
+          text: { query: 요청.query.val, path: "title" },
+        },
+      },
+    ];
+    let result = await db.collection("post").aggregate(검색조건).toArray();
+    응답.render("search.ejs", { lists: result });
+  } catch (error) {
+    console.log(error);
+    응답.status(500).send(error);
+  }
+});

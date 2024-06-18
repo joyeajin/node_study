@@ -9,10 +9,8 @@
   <body class="grey-bg">
     <%- include('nav.ejs') %>
 
-    <form class="search-box" action="/search" method="POST">
-      <input type="text" name="title" class="search-input" />
-      <button type="button" class="search-btn">검색</button>
-    </form>
+    <input type="text" name="title" class="search-input" />
+    <button type="button" class="search-btn">검색</button>
     <h4>검색결과</h4>
     <div class="white-bg">
       <% for(let i = 0; i < lists.length; i++){ %>

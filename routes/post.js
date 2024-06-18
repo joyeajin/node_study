@@ -4,7 +4,6 @@ let connectDB = require("./../database.js");
 let db;
 connectDB
   .then((client) => {
-    console.log("DB연결성공");
     db = client.db("forum");
   })
   .catch((err) => {
@@ -50,13 +49,19 @@ router.get("/write", checkLogin, async (요청, 응답) => {
 router.post("/add", async (요청, 응답) => {
   // console.log(요청.body);
 
-  // console.log(요청.file.location);
+  // console.log(요청.file);
   upload.single("img1")(요청, 응답, async (err) => {
     if (err) return 응답.send("업로드 에러");
     else {
       try {
         if (요청.body.title === "") {
           응답.send("제목을 입력해주세요.");
+        } else if (요청.file == undefined) {
+          await db.collection("post").insertOne({
+            title: 요청.body.title,
+            content: 요청.body.content,
+          });
+          응답.redirect("/list");
         } else {
           await db.collection("post").insertOne({
             title: 요청.body.title,
@@ -121,16 +126,6 @@ router.delete("/delete/:id", async (요청, 응답) => {
   // console.log(요청.params);
   await db.collection("post").deleteOne({ _id: new ObjectId(요청.params.id) });
   응답.send("삭제완료");
-});
-
-router.get("/search", async (요청, 응답) => {
-  // console.log(요청.query.val);
-
-  let result = await db
-    .collection("post")
-    .find({ title: { $regex: 요청.query.val } })
-    .toArray();
-  응답.render("search.ejs", { lists: result });
 });
 
 module.exports = router;
