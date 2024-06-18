@@ -49,7 +49,6 @@ router.get("/write", checkLogin, async (요청, 응답) => {
 router.post("/add", async (요청, 응답) => {
   // console.log(요청.body);
 
-  console.log(요청.user);
   upload.single("img1")(요청, 응답, async (err) => {
     if (err) return 응답.send("업로드 에러");
     else {
@@ -74,6 +73,20 @@ router.post("/add", async (요청, 응답) => {
   });
 });
 
+router.post("/comment", async (요청, 응답) => {
+  // console.log(요청.body);
+
+  // console.log("dd", 요청.user);
+
+  await db.collection("comment").insertOne({
+    writerId: new ObjectId(요청.user._id),
+    writer: 요청.user.username,
+    content: 요청.body.content,
+    parentId: new ObjectId(요청.body.parentId),
+  });
+  응답.redirect("back");
+});
+
 //detail
 router.get("/detail/:id", async (요청, 응답) => {
   try {
@@ -82,10 +95,17 @@ router.get("/detail/:id", async (요청, 응답) => {
       .findOne({ _id: new ObjectId(요청.params.id) });
     // console.log(요청.params.id);
     // console.log(result);
-    if (result == null) {
+
+    let commentResult = await db
+      .collection("comment")
+      .find({ parentId: new ObjectId(요청.params.id) })
+      .toArray();
+    // console.log("commentResult", commentResult);
+
+    if (result == null || commentResult == null) {
       console.log(error);
     }
-    응답.render("detail.ejs", { result: result });
+    응답.render("detail.ejs", { result: result, commentResult: commentResult });
   } catch (error) {
     console.log(error);
     응답.status(400).send("이상한 url입력");
