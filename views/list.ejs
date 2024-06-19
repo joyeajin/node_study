@@ -22,13 +22,8 @@
 
           <% if(userId && JSON.stringify(userId) ===
           JSON.stringify(posts[i].user)){ %>
-          <span
-            class="delete"
-            data-id="<%= posts[i]._id %>"
-            data-userId="<%= userId %>"
-            >🗑️</span
-          >
-          <% } else{ "" } %>
+          <span class="delete" data-id="<%= posts[i]._id %>">🗑️</span>
+          <% }else{ "" } %>
         </h4>
         <p><%= posts[i].content %></p>
       </div>
@@ -43,23 +38,10 @@
         deleteBtn.addEventListener("click", function (e) {
           fetch(`/delete/${this.dataset.id}`, {
             method: "DELETE",
-            // headers: {
-            //   "Content-Type": "application/json",
-            // },
-            // body: JSON.stringify({ a: 1 }),
           })
-            .then((r) => {
-              if (r.ok) {
-                return r.text();
-              } else {
-                throw new Error("삭제 실패");
-              }
-            })
+            .then((r) => r.text())
             .then((r) => {
               e.target.closest(".list-box").style.display = "none";
-            })
-            .catch((err) => {
-              console.error("error:", err);
             });
         });
       });

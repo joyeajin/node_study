@@ -32,30 +32,6 @@ app.use(
   })
 );
 app.use(passport.session());
-// app.use("/", checkLogin); // 미들웨어 일괄등록
-// app.use("/list", printTime);
-
-// // 이미지 업로드
-// const { S3Client } = require("@aws-sdk/client-s3");
-// const multer = require("multer");
-// const multerS3 = require("multer-s3");
-// const s3 = new S3Client({
-//   region: "ap-northeast-2",
-//   credentials: {
-//     accessKeyId: process.env.S3_KEY,
-//     secretAccessKey: process.env.S3_SECRET,
-//   },
-// });
-
-// const upload = multer({
-//   storage: multerS3({
-//     s3: s3,
-//     bucket: "yeajinforum1",
-//     key: function (요청, file, cb) {
-//       cb(null, Date.now().toString()); //업로드시 파일명 변경가능
-//     },
-//   }),
-// });
 
 let connectDB = require("./database.js");
 let db;
@@ -108,8 +84,6 @@ app.get("/list", async (요청, 응답) => {
   let result = await db.collection("post").find().toArray();
   let userId = new ObjectId(요청.user._id);
 
-  console.log(요청.user._id);
-  console.log(result);
   // console.log(result[0].title);
   // 응답.send(result[0].title);
   응답.render("list.ejs", { posts: result, userId: userId });
@@ -253,5 +227,40 @@ app.get("/search", async (요청, 응답) => {
   } catch (error) {
     console.log(error);
     응답.status(500).send(error);
+  }
+});
+
+app.get("/chat/request", async (요청, 응답) => {
+  // console.log(요청.user);
+  await db.collection("chat").insertOne({
+    member: [요청.user._id, new ObjectId(요청.query.writerId)],
+    date: new Date(),
+  });
+  응답.redirect("/chat/list");
+});
+
+app.get("/chat/list", async (요청, 응답) => {
+  let result = await db
+    .collection("chat")
+    .find({ member: 요청.user._id })
+    .toArray();
+  // console.log(result);
+  응답.render("chatList.ejs", { result: result });
+});
+
+app.get("/chat/detail/:id", async (요청, 응답) => {
+  let chatId = new ObjectId(요청.params.id);
+  if (요청.user && 요청.user._id) {
+    let userId = new ObjectId(요청.user._id);
+    let isMember = await db.collection("chat").findOne({ member: userId });
+    // console.log(userId);
+    // console.log(isMember);
+    if (isMember) {
+      let result = await db.collection("chat").findOne({ _id: chatId });
+      // console.log(result);
+      응답.render("chatDetail.ejs", { result: result });
+    }
+  } else {
+    응답.send("본인 채팅이 아니면 못봄");
   }
 });

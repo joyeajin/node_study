@@ -60,7 +60,7 @@ router.post("/add", async (요청, 응답) => {
             title: 요청.body.title,
             content: 요청.body.content,
             img: 요청.file ? 요청.file.location : "",
-            user: 요청.user._id,
+            user: new ObjectId(요청.user._id),
             username: 요청.user.username,
           });
           응답.redirect("/list");
