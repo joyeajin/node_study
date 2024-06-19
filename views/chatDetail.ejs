@@ -19,7 +19,40 @@
     </div>
     <div class="chat-form">
       <input class="chat-input" />
-      <button class="chat-button">전송</button>
+      <button class="chat-button" data-id="<%= result._id %>">전송</button>
     </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/socket.io@4.7.2/client-dist/socket.io.min.js"></script>
+    <script>
+      const socket = io();
+      //socket.emit("age", "20");
+
+      document.querySelector(".chat-button").addEventListener("click", (e) => {
+        const chatVal = document.querySelector(".chat-input").value;
+
+        socket.emit("ask-join", "<%= result._id %>");
+
+        socket.emit("message", { msg: chatVal, room: "<%= result._id %>" });
+      });
+
+      let idNum = 0;
+      socket.on("broadcast", (data) => {
+        console.log("broadcast data:", data);
+
+        const originalNode = document.querySelector(".chat-box.mine");
+
+        const newNodeHTML = `<div class="chat-box mine"><span>${data}</span></div>`;
+
+        const tempDiv = document.createElement("div");
+        tempDiv.innerHTML = newNodeHTML;
+        const newNode = tempDiv.firstElementChild;
+
+        idNum++;
+        newNode.id = "copyNode" + idNum;
+
+        const parentNode = originalNode.parentNode;
+        parentNode.appendChild(newNode);
+      });
+    </script>
   </body>
 </html>

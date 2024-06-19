@@ -3,6 +3,12 @@ const express = require("express");
 const app = express();
 const methodOverride = require("method-override");
 const bcrypt = require("bcrypt");
+
+const { createServer } = require("http");
+const { Server } = require("socket.io");
+const server = createServer(app);
+const io = new Server(server);
+
 require("dotenv").config();
 
 app.use(methodOverride("_method"));
@@ -18,19 +24,31 @@ const passport = require("passport");
 const LocalStrategy = require("passport-local");
 const MongoStore = require("connect-mongo");
 
+const sessionMiddleware = session({
+  secret: "암호화에 쓸 비번",
+  resave: false,
+  saveUninitialized: false,
+  cookie: { maxAge: 60 * 60 * 1000 },
+  store: MongoStore.create({
+    mongoUrl: process.env.DB_URL,
+    dbName: "forum",
+  }),
+});
+app.use(sessionMiddleware);
+
 app.use(passport.initialize());
-app.use(
-  session({
-    secret: "암호화에 쓸 비번",
-    resave: false,
-    saveUninitialized: false,
-    cookie: { maxAge: 60 * 60 * 1000 },
-    store: MongoStore.create({
-      mongoUrl: process.env.DB_URL,
-      dbName: "forum",
-    }),
-  })
-);
+// app.use(
+//   session({
+//     secret: "암호화에 쓸 비번",
+//     resave: false,
+//     saveUninitialized: false,
+//     cookie: { maxAge: 60 * 60 * 1000 },
+//     store: MongoStore.create({
+//       mongoUrl: process.env.DB_URL,
+//       dbName: "forum",
+//     }),
+//   })
+// );
 app.use(passport.session());
 
 let connectDB = require("./database.js");
@@ -39,7 +57,7 @@ connectDB
   .then((client) => {
     console.log("DB연결성공");
     db = client.db("forum");
-    app.listen(process.env.PORT, () => {
+    server.listen(process.env.PORT, () => {
       console.log("http://localhost:8081 에서 서버 실행중");
     });
   })
@@ -176,10 +194,12 @@ app.post("/login", checkIdPw, async (요청, 응답, next) => {
   })(요청, 응답, next);
 });
 
-app.get("/mypage", async (요청, 응답) => {
+app.get("/mypage", checkLogin, async (요청, 응답) => {
   // console.log(요청.user);
   if (요청.user) {
     응답.render("mypage.ejs", { userId: 요청.user.username });
+  } else {
+    응답.send("로그인 필요");
   }
 });
 
@@ -230,7 +250,7 @@ app.get("/search", async (요청, 응답) => {
   }
 });
 
-app.get("/chat/request", async (요청, 응답) => {
+app.get("/chat/request", checkLogin, async (요청, 응답) => {
   // console.log(요청.user);
   await db.collection("chat").insertOne({
     member: [요청.user._id, new ObjectId(요청.query.writerId)],
@@ -239,7 +259,7 @@ app.get("/chat/request", async (요청, 응답) => {
   응답.redirect("/chat/list");
 });
 
-app.get("/chat/list", async (요청, 응답) => {
+app.get("/chat/list", checkLogin, async (요청, 응답) => {
   let result = await db
     .collection("chat")
     .find({ member: 요청.user._id })
@@ -248,19 +268,52 @@ app.get("/chat/list", async (요청, 응답) => {
   응답.render("chatList.ejs", { result: result });
 });
 
-app.get("/chat/detail/:id", async (요청, 응답) => {
+app.get("/chat/detail/:id", checkLogin, async (요청, 응답) => {
   let chatId = new ObjectId(요청.params.id);
+  console.log(요청.user);
+  // let isMember = await db
+  //   .collection("chat")
+  //   .findOne({ member: new ObjectId(요청.user._id) });
+  // console.log(isMember);
   if (요청.user && 요청.user._id) {
     let userId = new ObjectId(요청.user._id);
     let isMember = await db.collection("chat").findOne({ member: userId });
-    // console.log(userId);
     // console.log(isMember);
     if (isMember) {
       let result = await db.collection("chat").findOne({ _id: chatId });
-      // console.log(result);
+      //     // console.log(result);
       응답.render("chatDetail.ejs", { result: result });
     }
   } else {
     응답.send("본인 채팅이 아니면 못봄");
   }
+});
+
+io.use((socket, next) => {
+  sessionMiddleware(socket.request, {}, next);
+});
+
+io.on("connection", (socket) => {
+  // socket.on("age", (data) => {
+  //   console.log("유저가 보낸거", data);
+  //   io.emit("name", "yeajin");
+  // });
+
+  // socket.join("1");
+  socket.on("ask-join", (data) => {
+    // socket.request.session
+    socket.join(data);
+  });
+
+  socket.on("message", async (data) => {
+    await db.collection("chatMessage").insertOne({
+      who: new ObjectId(socket.request.session.passport.user.id),
+      content: data.msg,
+      parentRoom: new ObjectId(data.id),
+    });
+
+    // console.log(socket.request.session.passport.user.id);
+
+    io.to(data.room).emit("broadcast", data.msg);
+  });
 });
