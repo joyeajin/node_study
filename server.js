@@ -109,7 +109,7 @@ app.get("/list", async (요청, 응답) => {
 
   // console.log(result[0].title);
   // 응답.send(result[0].title);
-  응답.render("list.ejs", { posts: result, userId: userId });
+  응답.render("list.ejs", { posts: result, userId: userId, user: 요청.user });
 });
 
 app.get("/time", async (요청, 응답) => {
@@ -248,7 +248,7 @@ app.get("/search", async (요청, 응답) => {
       },
     ];
     let result = await db.collection("post").aggregate(검색조건).toArray();
-    응답.render("search.ejs", { lists: result });
+    응답.render("search.ejs", { lists: result, user: 요청.user });
   } catch (error) {
     console.log(error);
     응답.status(500).send(error);
@@ -270,7 +270,7 @@ app.get("/chat/list", checkLogin, async (요청, 응답) => {
     .find({ member: 요청.user._id })
     .toArray();
   // console.log(result);
-  응답.render("chatList.ejs", { result: result });
+  응답.render("chatList.ejs", { result: result, user: 요청.user });
 });
 
 io.use((socket, next) => {
@@ -342,6 +342,7 @@ app.get("/chat/detail/:id", checkLogin, async (요청, 응답) => {
         result: result,
         chatResult: chatResult,
         userId: 요청.user._id,
+        user: 요청.user,
       });
     }
   } else {
@@ -363,7 +364,7 @@ app.get("/stream/list", (요청, 응답) => {
   // }, 1000);
 
   changeStream.on("change", (result) => {
-    console.log(result.fullDocument);
+    //console.log(result.fullDocument);
     응답.write("event: msg\n");
     응답.write(`data: ${JSON.stringify(result.fullDocument)}\n\n`);
   });

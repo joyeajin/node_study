@@ -42,7 +42,7 @@ function checkLogin(요청, 응답, next) {
 
 //write
 router.get("/write", checkLogin, async (요청, 응답) => {
-  응답.render("write.ejs");
+  응답.render("write.ejs", { user: 요청.user });
 });
 
 //add
@@ -105,7 +105,11 @@ router.get("/detail/:id", async (요청, 응답) => {
     if (result == null || commentResult == null) {
       console.log(error);
     }
-    응답.render("detail.ejs", { result: result, commentResult: commentResult });
+    응답.render("detail.ejs", {
+      result: result,
+      commentResult: commentResult,
+      user: 요청.user,
+    });
   } catch (error) {
     console.log(error);
     응답.status(400).send("이상한 url입력");
@@ -121,7 +125,7 @@ router.get("/update/:id", async (요청, 응답) => {
   // console.log(result);
 
   // console.log(updateResult);
-  응답.render("update.ejs", { result: result });
+  응답.render("update.ejs", { result: result, user: 요청.user });
 });
 
 //update

@@ -1,8 +1,17 @@
 <div class="nav">
-  <a class="logo">Yeajin Forum</a>
-  <a href="/">home</a>
-  <a href="/login">login</a>
-  <a href="/list">list</a>
-  <a href="/write">write</a>
-  <a href="/chat/list">chat</a>
+  <div class="nav-menu">
+    <a class="logo">Yeajin Forum</a>
+    <a href="/">home</a>
+    <a href="/login">login</a>
+    <a href="/list">list</a>
+    <a href="/write">write</a>
+    <a href="/chat/list">chat</a>
+  </div>
+  <div class="nav-user-info">
+    <% if (user) { %>
+    <span>username : <%= user.username %></span>
+    <% } else { %>
+    <span>Guest</span>
+    <% } %>
+  </div>
 </div>

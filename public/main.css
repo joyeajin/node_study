@@ -6,6 +6,7 @@ body {
   padding: 15px;
   align-items: center;
   background: #eee;
+  justify-content: space-between;
 }
 .nav a {
   margin-right: 10px;
@@ -20,6 +21,10 @@ body {
   background: white;
   margin: 20px;
   border-radius: 5px;
+}
+.white-bg.list {
+  display: flex;
+  flex-direction: column-reverse;
 }
 .list-box {
   padding: 10px;

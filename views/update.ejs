@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="/main.css" />
   </head>
   <body class="grey-bg">
-    <%- include('nav.ejs') %>
+    <%- include('nav.ejs', { user: user }) %>
 
     <form class="form-box" action="/update?_method=PUT" method="POST">
       <h4>수정하기</h4>

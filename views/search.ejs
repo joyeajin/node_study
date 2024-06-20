@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="/main.css" />
   </head>
   <body class="grey-bg">
-    <%- include('nav.ejs') %>
+    <%- include('nav.ejs', { user: user }) %>
 
     <input type="text" name="title" class="search-input" />
     <button type="button" class="search-btn">검색</button>

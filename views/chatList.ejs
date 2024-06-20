@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="/main.css" />
   </head>
   <body class="grey-bg">
-    <%- include('nav.ejs') %>
+    <%- include('nav.ejs', { user: user }) %>
 
     <div class="white-bg">
       <% for(let i = 0; i < result.length; i++){ %>

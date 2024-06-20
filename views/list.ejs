@@ -7,21 +7,21 @@
     <link rel="stylesheet" href="/main.css" />
   </head>
   <body class="grey-bg">
-    <%- include('nav.ejs') %>
+    <%- include('nav.ejs', { user: user }) %>
 
     <input type="text" name="title" class="search-input" />
     <button type="button" class="search-btn">검색</button>
-    <div class="white-bg">
+    <div class="white-bg list">
       <% for(let i = 0; i < posts.length; i++){ %>
       <div class="list-box">
         <h4>
           <a href="/detail/<%= posts[i]._id %>"><%= posts[i].title %></a>
-          <a href="/update/<%= posts[i]._id %>">✏️</a>
           <!-- <p><%= posts[i].user %></p>
           <p><%= userId %></p> -->
 
           <% if(userId && JSON.stringify(userId) ===
           JSON.stringify(posts[i].user)){ %>
+          <a href="/update/<%= posts[i]._id %>">✏️</a>
           <span class="delete" data-id="<%= posts[i]._id %>">🗑️</span>
           <% }else{ "" } %>
         </h4>
@@ -54,14 +54,26 @@
 
       let eventSource = new EventSource("/stream/list");
       eventSource.addEventListener("msg", (e) => {
-        console.log(e.data);
-        let 가져온거 = JSON.parse(e.data);
-        document
-          .querySelector(".white-bg")
-          .insertAdjacentHTML(
-            "afterbegin",
-            `<div class="list-box"><h4>${가져온거.title}</h4></div>`
-          );
+        //console.log(e.data);
+        let listData = JSON.parse(e.data);
+        let isMine = "<%= userId %>" === listData.user;
+        //console.log(isMine);
+        document.querySelector(".white-bg").insertAdjacentHTML(
+          "beforeend",
+          `<div class="list-box">
+            <h4>
+              <a href="/detail/${listData._id}">${listData.title}</a>
+              ${
+                isMine
+                  ? `<a href="/update/${listData._id}">✏️</a>
+              <span class="delete" data-id="${listData._id}">🗑️</span>`
+                  : ""
+              }
+              
+            </h4>
+            <p>${listData.content}</p>
+          </div>`
+        );
       });
     </script>
   </body>
