@@ -185,7 +185,7 @@ passport.deserializeUser(async (user, done) => {
 });
 
 app.get("/login", async (요청, 응답) => {
-  응답.render("login.ejs");
+  응답.render("login.ejs", { user: 요청.user || {} });
 });
 
 app.post("/login", checkIdPw, async (요청, 응답, next) => {

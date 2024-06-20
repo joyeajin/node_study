@@ -74,10 +74,6 @@ router.post("/add", async (요청, 응답) => {
 });
 
 router.post("/comment", async (요청, 응답) => {
-  // console.log(요청.body);
-
-  // console.log("dd", 요청.user);
-
   await db.collection("comment").insertOne({
     writerId: new ObjectId(요청.user._id),
     writer: 요청.user.username,
