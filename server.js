@@ -53,10 +53,15 @@ app.use(passport.session());
 
 let connectDB = require("./database.js");
 let db;
+let changeStream;
 connectDB
   .then((client) => {
     console.log("DB연결성공");
     db = client.db("forum");
+
+    let 조건 = [{ $match: { operationType: "insert" } }];
+    changeStream = db.collection("post").watch(조건);
+
     server.listen(process.env.PORT, () => {
       console.log("http://localhost:8081 에서 서버 실행중");
     });
@@ -342,4 +347,24 @@ app.get("/chat/detail/:id", checkLogin, async (요청, 응답) => {
   } else {
     응답.send("본인 채팅이 아니면 못봄");
   }
+});
+
+app.get("/stream/list", (요청, 응답) => {
+  응답.writeHead(200, {
+    Connection: "keep-alive",
+    "Content-Type": "text/event-stream",
+    "Cache-Control": "no-cache",
+  });
+
+  // setInterval(() => {
+  //   응답.write("event: msg\n");
+  //   응답.write("data: 바보\n\n");
+
+  // }, 1000);
+
+  changeStream.on("change", (result) => {
+    console.log(result.fullDocument);
+    응답.write("event: msg\n");
+    응답.write(`data: ${JSON.stringify(result.fullDocument)}\n\n`);
+  });
 });
