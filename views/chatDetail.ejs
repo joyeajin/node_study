@@ -9,12 +9,21 @@
   <body class="grey-bg">
     <%- include('nav.ejs') %>
 
-    <p><%= JSON.stringify(result) %></p>
+    <!-- <p><%= JSON.stringify(result) %></p> -->
+    <!-- <p><%= JSON.stringify(chatResult) %></p>
+    <p><%= userId %></p> -->
     <div class="detail-bg">
       <div class="chat-screen">
-        <div class="chat-box"><span>안녕하세요</span></div>
-        <div class="chat-box"><span>안녕하세요</span></div>
-        <div class="chat-box mine"><span>안녕하세요</span></div>
+        <!-- <div class="chat-box"><span>안녕하세요</span></div> -->
+        <% for(let i = 0; i < chatResult.length; i++){ let isMine =
+        JSON.stringify(chatResult[i].who) === JSON.stringify(userId); %>
+
+        <div class="chat-box <%= isMine ? 'mine' : '' %>">
+          <span class="date"><%= chatResult[i].date %></span>
+          <span><%= chatResult[i].content %></span>
+        </div>
+
+        <% } %>
       </div>
     </div>
     <div class="chat-form">
@@ -28,30 +37,42 @@
       //socket.emit("age", "20");
 
       document.querySelector(".chat-button").addEventListener("click", (e) => {
-        const chatVal = document.querySelector(".chat-input").value;
-
+        let chatInput = document.querySelector(".chat-input");
+        let chatVal = chatInput.value;
         socket.emit("ask-join", "<%= result._id %>");
 
         socket.emit("message", { msg: chatVal, room: "<%= result._id %>" });
+
+        chatInput.value = "";
       });
 
-      let idNum = 0;
       socket.on("broadcast", (data) => {
-        console.log("broadcast data:", data);
+        //console.log("broadcast data who:", data.who);
+        //console.log("userId:", "<%= userId %>");
 
-        const originalNode = document.querySelector(".chat-box.mine");
+        document
+          .querySelector(".chat-screen")
+          .insertAdjacentHTML(
+            "beforeend",
+            `<div class="chat-box mine"><span class="date">${data.date}</span><span>${data.msg}</span></div>`
+          );
 
-        const newNodeHTML = `<div class="chat-box mine"><span>${data}</span></div>`;
+        //console.log(isMine);
+        //let isMine = data.who === "<%= userId %>";
 
-        const tempDiv = document.createElement("div");
-        tempDiv.innerHTML = newNodeHTML;
-        const newNode = tempDiv.firstElementChild;
-
-        idNum++;
-        newNode.id = "copyNode" + idNum;
-
-        const parentNode = originalNode.parentNode;
-        parentNode.appendChild(newNode);
+        //isMine
+        //  ? document
+        //      .querySelector(".chat-screen")
+        //      .insertAdjacentHTML(
+        //        "beforeend",
+        //        `<div class="chat-box mine"><span class="date">${data.date}</span><span>${data.msg}</span></div>`
+        //      )
+        //  : document
+        //      .querySelector(".chat-screen")
+        //      .insertAdjacentHTML(
+        //        "beforeend",
+        //        `<div class="chat-box"><span class="date">${data.date}</span><span>${data.msg}</span></div>`
+        //      );
       });
     </script>
   </body>

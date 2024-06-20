@@ -268,27 +268,6 @@ app.get("/chat/list", checkLogin, async (요청, 응답) => {
   응답.render("chatList.ejs", { result: result });
 });
 
-app.get("/chat/detail/:id", checkLogin, async (요청, 응답) => {
-  let chatId = new ObjectId(요청.params.id);
-  console.log(요청.user);
-  // let isMember = await db
-  //   .collection("chat")
-  //   .findOne({ member: new ObjectId(요청.user._id) });
-  // console.log(isMember);
-  if (요청.user && 요청.user._id) {
-    let userId = new ObjectId(요청.user._id);
-    let isMember = await db.collection("chat").findOne({ member: userId });
-    // console.log(isMember);
-    if (isMember) {
-      let result = await db.collection("chat").findOne({ _id: chatId });
-      //     // console.log(result);
-      응답.render("chatDetail.ejs", { result: result });
-    }
-  } else {
-    응답.send("본인 채팅이 아니면 못봄");
-  }
-});
-
 io.use((socket, next) => {
   sessionMiddleware(socket.request, {}, next);
 });
@@ -301,19 +280,66 @@ io.on("connection", (socket) => {
 
   // socket.join("1");
   socket.on("ask-join", (data) => {
+    // console.log(data);
     // socket.request.session
-    socket.join(data);
+    if (data) {
+      socket.join(data);
+    } else {
+      alert("로그인 해주세요~~");
+    }
   });
 
   socket.on("message", async (data) => {
+    const now = new Date();
+    const formattedDate = now.toLocaleString("ko-KR", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
+
     await db.collection("chatMessage").insertOne({
       who: new ObjectId(socket.request.session.passport.user.id),
       content: data.msg,
-      parentRoom: new ObjectId(data.id),
+      parentRoom: new ObjectId(data.room),
+      date: formattedDate,
     });
 
-    // console.log(socket.request.session.passport.user.id);
+    // console.log(data);
 
-    io.to(data.room).emit("broadcast", data.msg);
+    io.to(data.room).emit("broadcast", {
+      msg: data.msg,
+      date: formattedDate,
+      who: new ObjectId(socket.request.session.passport.user.id),
+    });
   });
+});
+
+app.get("/chat/detail/:id", checkLogin, async (요청, 응답) => {
+  let chatId = new ObjectId(요청.params.id);
+  // console.log(요청.user);
+
+  if (요청.user && 요청.user._id) {
+    let userId = new ObjectId(요청.user._id);
+    let isMember = await db.collection("chat").findOne({ member: userId });
+    // console.log(isMember);
+    if (isMember) {
+      let result = await db.collection("chat").findOne({ _id: chatId });
+      //     // console.log(result);
+
+      let chatResult = await db
+        .collection("chatMessage")
+        .find({ parentRoom: chatId })
+        .toArray();
+      응답.render("chatDetail.ejs", {
+        result: result,
+        chatResult: chatResult,
+        userId: 요청.user._id,
+      });
+    }
+  } else {
+    응답.send("본인 채팅이 아니면 못봄");
+  }
 });

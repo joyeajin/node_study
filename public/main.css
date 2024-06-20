@@ -82,8 +82,15 @@ div {
 .chat-box {
   margin-top: 15px;
   display: flex;
+  align-items: flex-end;
+  column-gap: 8px;
 }
-.chat-box span {
+
+.chat-box:not(.mine) .date {
+  order: 1;
+}
+
+.chat-box span:not(.date) {
   padding: 10px;
   background: #eee;
 }
